@@ -23,6 +23,7 @@ public class Controles : MonoBehaviour
     public bool EstaCorriendo { get; private set; }
 
     [HideInInspector] public bool puedeCorrer = true;
+    [HideInInspector] public float velocidadPlataforma = 0f;
 
     private Rigidbody2D rb;
     private Animator animator;
@@ -124,11 +125,12 @@ public class Controles : MonoBehaviour
 
     /// <summary>
     /// Aplica la velocidad horizontal (andando o corriendo) sin tocar la vertical.
+    /// Si Marta está sobre una plataforma móvil, le suma la velocidad de la plataforma.
     /// </summary>
     private void Mover()
     {
         float vel = EstaCorriendo ? velocidadSprint : velocidad;
-        rb.linearVelocity = new Vector2(mover * vel, rb.linearVelocity.y);
+        rb.linearVelocity = new Vector2(mover * vel + velocidadPlataforma, rb.linearVelocity.y);
     }
 
     /// <summary>
