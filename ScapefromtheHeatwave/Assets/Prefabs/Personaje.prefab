@@ -325,9 +325,10 @@ GameObject:
   - component: {fileID: 4378655814601614071}
   - component: {fileID: 128452796151564103}
   - component: {fileID: 2972133452271430890}
+  - component: {fileID: 563742198784060240}
   m_Layer: 0
   m_Name: Marta
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -506,3 +507,26 @@ MonoBehaviour:
   cortarSalto: 0.5
   tiempoCoyote: 0.1
   puedeCorrer: 1
+--- !u!114 &563742198784060240
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7094540443386476434}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9a16b9ca1c1a7a4dbeba1a1f552477c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  calor: 0
+  calorMaximo: 100
+  subidaCalorAlSol: 4
+  bajadaCalorEnSombra: 8
+  hidratacion: 100
+  hidratacionMaxima: 100
+  gastoAndando: 1
+  gastoCorriendo: 4
+  gastoPorSalto: 2
+  recuperacionEnFuente: 15
+  hidratacionParaVolverACorrer: 25

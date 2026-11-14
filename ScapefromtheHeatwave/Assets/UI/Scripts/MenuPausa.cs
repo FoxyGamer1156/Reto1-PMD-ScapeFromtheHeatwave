@@ -55,8 +55,13 @@ public class MenuPausa : MonoBehaviour
 
     /// <summary>
     /// Pausa el juego si está en marcha, o lo reanuda si está en pausa.
+    /// No hace nada si la partida ya ha terminado (victoria o derrota).
     /// </summary>
-    public void Alternar() { if (EnPausa) Continuar(); else Pausar(); }
+    public void Alternar()
+    {
+        if (GameManager.instancia != null && GameManager.instancia.partidaTerminada) return;
+        if (EnPausa) Continuar(); else Pausar();
+    }
 
     /// <summary>
     /// Muestra el panel de pausa y detiene el tiempo del juego.

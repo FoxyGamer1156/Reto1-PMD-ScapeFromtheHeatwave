@@ -143,6 +143,9 @@ public class Controles : MonoBehaviour
 
         contadorCoyote = 0f;
         EnSuelo = false;
+
+        EstadoJugador estado = GetComponent<EstadoJugador>();
+        if (estado != null) estado.GastarPorSalto();
     }
 
     /// <summary>
