@@ -2,16 +2,15 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Controla la partida: pasa el calor y la hidratación del jugador al HUD,
-/// lleva la cuenta atrás y muestra el panel de victoria o de derrota.
+/// Controla la partida: lleva la cuenta atrás y muestra el panel de victoria o de derrota.
+/// El calor y la hidratación los pasa al HUD el propio EstadoJugador.
 /// Desde otros scripts se usa con GameManager.instancia.
 /// </summary>
 public class GameManager : MonoBehaviour
 {
     public static GameManager instancia;
 
-    [Header("Referencias")]
-    public EstadoJugador jugador;
+    [Header("Paneles")]
     public GameObject panelDerrota;
     public GameObject panelVictoria;
 
@@ -33,43 +32,24 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Pone el tiempo del juego en marcha, busca al jugador por su tag si no está asignado
-    /// y oculta los paneles de final de partida.
+    /// Pone el tiempo del juego en marcha y oculta los paneles de final de partida.
     /// </summary>
     void Start()
     {
         Time.timeScale = 1f;
-
-        if (jugador == null)
-        {
-            GameObject objetoJugador = GameObject.FindWithTag("Player");
-            if (objetoJugador != null) jugador = objetoJugador.GetComponent<EstadoJugador>();
-        }
 
         if (panelDerrota != null) panelDerrota.SetActive(false);
         if (panelVictoria != null) panelVictoria.SetActive(false);
     }
 
     /// <summary>
-    /// Mientras se juega, actualiza el HUD y la cuenta atrás.
+    /// Mientras se juega, actualiza la cuenta atrás.
     /// </summary>
     void Update()
     {
         if (partidaTerminada) return;
 
-        ActualizarHUD();
         ActualizarCuentaAtras();
-    }
-
-    /// <summary>
-    /// Pasa el calor y la hidratación del jugador (de 0 a 1) a las barras del HUD.
-    /// </summary>
-    private void ActualizarHUD()
-    {
-        if (jugador == null || HUDController.Instancia == null) return;
-
-        HUDController.Instancia.SetCalor(jugador.calor / jugador.calorMaximo);
-        HUDController.Instancia.SetHidratacion(jugador.hidratacion / jugador.hidratacionMaxima);
     }
 
     /// <summary>
