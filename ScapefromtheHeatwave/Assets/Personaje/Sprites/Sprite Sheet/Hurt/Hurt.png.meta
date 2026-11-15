@@ -124,7 +124,7 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: 1
+    filterMode: 0
     aniso: 1
     mipBias: 0
     wrapU: 1
@@ -162,7 +162,7 @@ TextureImporter:
     maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
-    textureCompression: 1
+    textureCompression: 0
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
@@ -885,7 +885,37 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      Hurt_0: -2048800907179887802
+      Hurt_1: 490842205202310979
+      Hurt_10: -1530035385177744352
+      Hurt_11: -1594775402449041300
+      Hurt_12: 2613454359409402267
+      Hurt_13: 4456403835247727152
+      Hurt_14: -2919361725218032385
+      Hurt_15: -7596089925820088084
+      Hurt_16: -1127819593939285392
+      Hurt_17: 6905827832230521594
+      Hurt_18: 981960596569526839
+      Hurt_19: -9071442512571043273
+      Hurt_2: -3720053754089064719
+      Hurt_20: 4785635825548031859
+      Hurt_21: 4603836837179368064
+      Hurt_22: -1317404606766141199
+      Hurt_23: 4441579562360908103
+      Hurt_24: -7286862310846563085
+      Hurt_25: 2095026346876705618
+      Hurt_26: 606182963817907664
+      Hurt_27: 4758860376317421828
+      Hurt_28: -6942568255498430480
+      Hurt_29: -7129395022464093005
+      Hurt_3: 5649970053243570431
+      Hurt_4: -371187646486735994
+      Hurt_5: 1177448812329152706
+      Hurt_6: 7933592967420663305
+      Hurt_7: 7273187483062910031
+      Hurt_8: -1817361991890795262
+      Hurt_9: -2270139407860209000
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -410,7 +410,18 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      Meditation_0: -2928212667995565158
+      Meditation_1: 7729673024527935970
+      Meditation_10: 683814153865970651
+      Meditation_2: -4967177970727232626
+      Meditation_3: 6962898747507935087
+      Meditation_4: -5893875281258705744
+      Meditation_5: -3518168683485451783
+      Meditation_6: 9164995530300924759
+      Meditation_7: 2096521778261010101
+      Meditation_8: -2665240208674131220
+      Meditation_9: -1889289405755287313
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
