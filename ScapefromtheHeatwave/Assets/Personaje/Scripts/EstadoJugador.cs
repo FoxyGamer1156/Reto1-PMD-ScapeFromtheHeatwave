@@ -1,234 +1,106 @@
 using UnityEngine;
 
 /// <summary>
-/// Barras de calor e hidratación de Marta.
-/// El calor sube al sol y baja en la sombra; si llega al máximo, se pierde la partida.
-/// La hidratación se gasta al andar, correr y saltar, y se recupera en las fuentes;
-/// si llega a 0, Marta no puede correr hasta recuperar un poco.
-/// Las zonas del nivel se reconocen por su tag: Sombra, Fuente, Lava y Meta.
+/// Calor e hidratación de Marta (ambos 0..1) y sus reglas. Va en el mismo objeto que Controles.
+///  - El calor sube solo, poco a poco. La gorra lo reduce a la mitad durante 15 s. La sombra lo enfría.
+///  - Esprintar gasta hidratación. La hidratación SOLO sube bebiendo.
+///  - Calor > 70 %  → la hidratación baja sola.
+///  - Hidratación < 20 % → se genera un 20 % más de calor.
+///  - Hidratación 0 → no se puede esprintar (Controles.puedeCorrer).
+/// Actualiza el HUD a través de HUDController.
 /// </summary>
+[RequireComponent(typeof(Controles))]
 public class EstadoJugador : MonoBehaviour
 {
-    [Header("Calor")]
-    public float calor = 0f;
-    public float calorMaximo = 100f;
-    public float subidaCalorAlSol = 4f;
-    public float bajadaCalorEnSombra = 8f;
+    public static EstadoJugador Instancia { get; private set; }
 
-    [Header("Hidratación")]
-    public float hidratacion = 100f;
-    public float hidratacionMaxima = 100f;
-    public float gastoAndando = 1f;
-    public float gastoCorriendo = 4f;
-    public float gastoPorSalto = 2f;
-    public float recuperacionEnFuente = 15f;
-    public float hidratacionParaVolverACorrer = 25f;
+    [Header("Calor (0 = fresco, 1 = golpe de calor)")]
+    [Range(0f, 1f)] public float calor = 0f;
+    [Tooltip("Calor que sube por segundo (0.01 = tarda 100 s en llenarse)")]
+    public float calorPorSegundo = 0.01f;
+    [Tooltip("Calor que baja por segundo dentro de una sombra")]
+    public float enfriamientoSombra = 0.05f;
+    public float umbralCalorAlto = 0.7f;
 
-    [Header("Muerte")]
-    public float segundosAntesDeDerrota = 2f;
+    [Header("Hidratación (1 = llena)")]
+    [Range(0f, 1f)] public float hidratacion = 1f;
+    [Tooltip("Pérdida por segundo al esprintar (0.015 = ~67 s de sprint continuo; antes 0.012)")]
+    public float perdidaSprint = 0.015f;
+    [Tooltip("Pérdida por segundo mientras el calor está por encima del umbral")]
+    public float perdidaPorCalorAlto = 0.01f;
+    public float umbralHidratacionBaja = 0.2f;
+    public float multiplicadorHidratacionBaja = 1.2f;
 
-    private Controles controles;
-    private Animator animator;
-    private bool enSombra = false;
-    private bool enFuente = false;
-    private float tiempoProteccion = 0f;
-    private float multiplicadorProteccion = 1f;
-    private bool muerto = false;
+    [Header("Gorra")]
+    public float duracionGorra = 15f;
+    [Range(0f, 1f)] public float reduccionGorra = 0.5f;
 
-    /// <summary>
-    /// Guarda los componentes que se usan después.
-    /// </summary>
+    [Header("Golpe de calor (calor al 100 %)")]
+    public bool reaparecerConCalorMaximo = true;
+    [Range(0f, 1f)] public float calorTrasReaparecer = 0.5f;
+
+    public float Calor => calor;
+    public float Hidratacion => hidratacion;
+    public bool EnSombra => zonasSombra.Count > 0;
+    public float GorraRestante { get; private set; }
+
+    readonly System.Collections.Generic.HashSet<ZonaSombra> zonasSombra = new System.Collections.Generic.HashSet<ZonaSombra>();
+    Controles controles;
+
+    void Awake() { Instancia = this; controles = GetComponent<Controles>(); }
+
     void Start()
     {
-        controles = GetComponent<Controles>();
-        animator = GetComponent<Animator>();
+        PuntoControl.EstablecerInicio(transform.position);
+        ActualizarHUD();
     }
 
-    /// <summary>
-    /// Cada frame actualiza el calor, la hidratación y la protección, y comprueba la insolación.
-    /// </summary>
     void Update()
     {
-        if (muerto) return;
+        float dt = Time.deltaTime;
+        if (dt <= 0f) return;   // en pausa no pasa nada
 
-        ActualizarCalor();
-        ActualizarHidratacion();
-        ActualizarProteccion();
+        // ---- Calor ----
+        float generacion = calorPorSegundo;
+        if (hidratacion < umbralHidratacionBaja) generacion *= multiplicadorHidratacionBaja;
+        if (GorraRestante > 0f) { generacion *= 1f - reduccionGorra; GorraRestante = Mathf.Max(0f, GorraRestante - dt); }
+        // Sombra que enfría (farola, palmera, árbol grande): baja. Sombra que solo "frena" (árboles): deja de subir.
+        float cambio = EnfriaSombra() ? generacion - enfriamientoSombra : (EnSombra ? 0f : generacion);
+        calor = Mathf.Clamp01(calor + cambio * dt);
 
-        if (calor >= calorMaximo)
+        // ---- Hidratación (nunca sube sola) ----
+        float perdida = 0f;
+        if (controles.EstaCorriendo) perdida += perdidaSprint;
+        if (calor > umbralCalorAlto) perdida += perdidaPorCalorAlto;
+        hidratacion = Mathf.Clamp01(hidratacion - perdida * dt);
+        controles.puedeCorrer = hidratacion > 0f;
+
+        ActualizarHUD();
+
+        if (calor >= 1f && reaparecerConCalorMaximo)
         {
-            Morir();
+            PuntoControl.Reaparecer(controles);
+            calor = calorTrasReaparecer;
         }
     }
 
-    /// <summary>
-    /// Sube el calor al sol (menos si Marta está protegida) o lo baja en la sombra.
-    /// </summary>
-    private void ActualizarCalor()
+    void ActualizarHUD()
     {
-        if (enSombra)
-        {
-            calor = calor - bajadaCalorEnSombra * Time.deltaTime;
-        }
-        else
-        {
-            float subida = subidaCalorAlSol;
-            if (tiempoProteccion > 0f)
-            {
-                subida = subida * multiplicadorProteccion;
-            }
-            calor = calor + subida * Time.deltaTime;
-        }
-
-        calor = Mathf.Clamp(calor, 0f, calorMaximo);
+        if (!HUDController.Instancia) return;
+        HUDController.Instancia.SetCalor(calor);
+        HUDController.Instancia.SetHidratacion(hidratacion);
     }
 
-    /// <summary>
-    /// Gasta hidratación al moverse, la recupera en las fuentes y decide si Marta puede correr.
-    /// </summary>
-    private void ActualizarHidratacion()
+    // ---- Los llaman Inventario y ZonaSombra ----
+    bool EnfriaSombra()
     {
-        if (controles.EstaCorriendo)
-        {
-            hidratacion = hidratacion - gastoCorriendo * Time.deltaTime;
-        }
-        else if (controles.SeMueve)
-        {
-            hidratacion = hidratacion - gastoAndando * Time.deltaTime;
-        }
-
-        if (enFuente)
-        {
-            hidratacion = hidratacion + recuperacionEnFuente * Time.deltaTime;
-        }
-
-        hidratacion = Mathf.Clamp(hidratacion, 0f, hidratacionMaxima);
-
-        if (hidratacion <= 0f)
-        {
-            controles.puedeCorrer = false;
-        }
-        else if (hidratacion >= hidratacionParaVolverACorrer)
-        {
-            controles.puedeCorrer = true;
-        }
+        foreach (var z in zonasSombra) if (z && z.reduceCalor) return true;
+        return false;
     }
 
-    /// <summary>
-    /// Temporizador de la protección: le resta el tiempo que pasa hasta llegar a 0.
-    /// </summary>
-    private void ActualizarProteccion()
-    {
-        if (tiempoProteccion > 0f)
-        {
-            tiempoProteccion = tiempoProteccion - Time.deltaTime;
-        }
-    }
-
-    /// <summary>
-    /// Resta hidratación al saltar. Lo llama <see cref="Controles"/>.
-    /// </summary>
-    public void GastarPorSalto()
-    {
-        hidratacion = Mathf.Max(0f, hidratacion - gastoPorSalto);
-    }
-
-    /// <summary>
-    /// Recupera hidratación de golpe (por ejemplo, al beber una botella de agua).
-    /// </summary>
-    /// <param name="cantidad">Puntos de hidratación que se recuperan.</param>
-    public void Beber(float cantidad)
-    {
-        hidratacion = Mathf.Min(hidratacionMaxima, hidratacion + cantidad);
-    }
-
-    /// <summary>
-    /// Hace que durante un tiempo el calor suba más despacio (gorra, sombrilla).
-    /// </summary>
-    /// <param name="multiplicador">0.5 = el calor sube la mitad de rápido.</param>
-    /// <param name="segundos">Cuánto dura la protección.</param>
-    public void Proteger(float multiplicador, float segundos)
-    {
-        multiplicadorProteccion = multiplicador;
-        tiempoProteccion = segundos;
-    }
-
-    /// <summary>
-    /// Marta muere: deja de moverse, reproduce la animación de daño y,
-    /// pasados <see cref="segundosAntesDeDerrota"/>, avisa de la derrota.
-    /// </summary>
-    public void Morir()
-    {
-        if (muerto) return;
-        muerto = true;
-
-        controles.enabled = false;
-        GetComponent<Rigidbody2D>().linearVelocity = Vector2.zero;
-        animator.SetTrigger("Dano");
-
-        Invoke("AvisarDerrota", segundosAntesDeDerrota);
-    }
-
-    /// <summary>
-    /// Avisa al GameManager de que se ha perdido la partida.
-    /// </summary>
-    private void AvisarDerrota()
-    {
-        if (GameManager.instancia != null)
-        {
-            GameManager.instancia.Perder();
-        }
-    }
-
-    /// <summary>
-    /// Al entrar en una zona, mira su tag: sombra, fuente, lava o meta.
-    /// </summary>
-    void OnTriggerEnter2D(Collider2D other)
-    {
-        if (other.CompareTag("Sombra"))
-        {
-            enSombra = true;
-        }
-        else if (other.CompareTag("Fuente"))
-        {
-            enFuente = true;
-        }
-        else if (other.CompareTag("Lava"))
-        {
-            Morir();
-        }
-        else if (other.CompareTag("Meta"))
-        {
-            if (GameManager.instancia != null)
-            {
-                GameManager.instancia.Ganar();
-            }
-        }
-    }
-
-    /// <summary>
-    /// Al salir de una sombra o de una fuente, deja de aplicar su efecto.
-    /// </summary>
-    void OnTriggerExit2D(Collider2D other)
-    {
-        if (other.CompareTag("Sombra"))
-        {
-            enSombra = false;
-        }
-        else if (other.CompareTag("Fuente"))
-        {
-            enFuente = false;
-        }
-    }
-
-    /// <summary>
-    /// Por si la lava es un suelo sólido en vez de un trigger.
-    /// </summary>
-    void OnCollisionEnter2D(Collision2D collision)
-    {
-        if (collision.gameObject.CompareTag("Lava"))
-        {
-            Morir();
-        }
-    }
+    public void Beber(float cantidad) { hidratacion = Mathf.Clamp01(hidratacion + cantidad); }
+    public void AnadirCalor(float cantidad) { calor = Mathf.Clamp01(calor + cantidad); }
+    public void ActivarGorra() { GorraRestante = duracionGorra; }
+    public void EntrarSombra(ZonaSombra z) { zonasSombra.Add(z); }
+    public void SalirSombra(ZonaSombra z) { zonasSombra.Remove(z); }
 }

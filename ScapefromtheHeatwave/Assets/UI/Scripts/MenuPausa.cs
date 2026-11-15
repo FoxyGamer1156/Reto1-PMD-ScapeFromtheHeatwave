@@ -6,9 +6,7 @@ using UnityEngine.UI;
 using UnityEngine.InputSystem;
 #endif
 
-/// <summary>
-/// Menú de pausa: Esc en PC, botón de pausa en Android (conectado a Alternar).
-/// </summary>
+/// <summary>Menú de pausa: Esc en PC, botón de pausa en Android (conectado a Alternar).</summary>
 public class MenuPausa : MonoBehaviour
 {
     public static bool EnPausa { get; private set; }
@@ -24,9 +22,6 @@ public class MenuPausa : MonoBehaviour
 
     public string escenaMenu = "MenuPrincipal";
 
-    /// <summary>
-    /// Oculta el panel, carga los volúmenes guardados en los sliders y los conecta al AudioMixer.
-    /// </summary>
     void Start()
     {
         EnPausa = false;
@@ -40,9 +35,6 @@ public class MenuPausa : MonoBehaviour
         AplicarVolumen(parametroEfectos, sliderEfectos.value);
     }
 
-    /// <summary>
-    /// Abre o cierra la pausa al pulsar Esc.
-    /// </summary>
     void Update()
     {
 #if ENABLE_INPUT_SYSTEM
@@ -53,29 +45,12 @@ public class MenuPausa : MonoBehaviour
         if (esc) Alternar();
     }
 
-    /// <summary>
-    /// Pausa el juego si está en marcha, o lo reanuda si está en pausa.
-    /// No hace nada si la partida ya ha terminado (victoria o derrota).
-    /// </summary>
-    public void Alternar()
-    {
-        if (GameManager.instancia != null && GameManager.instancia.partidaTerminada) return;
-        if (EnPausa) Continuar(); else Pausar();
-    }
+    public void Alternar() { if (EnPausa) Continuar(); else Pausar(); }
 
-    /// <summary>
-    /// Muestra el panel de pausa y detiene el tiempo del juego.
-    /// </summary>
-    public void Pausar() { EnPausa = true; panel.SetActive(true); Time.timeScale = 0f; }
+    public void Pausar() { EnPausa = true; panel.SetActive(true); Time.timeScale = 0f; SFX.Play("pausa", .8f, 0f); }
 
-    /// <summary>
-    /// Oculta el panel de pausa y reanuda el tiempo del juego.
-    /// </summary>
-    public void Continuar() { EnPausa = false; panel.SetActive(false); Time.timeScale = 1f; }
+    public void Continuar() { EnPausa = false; panel.SetActive(false); Time.timeScale = 1f; SFX.Play("continuar", .8f, 0f); }
 
-    /// <summary>
-    /// Restaura el tiempo y carga la escena del menú principal.
-    /// </summary>
     public void SalirAlMenu()
     {
         EnPausa = false;
@@ -83,11 +58,6 @@ public class MenuPausa : MonoBehaviour
         SceneManager.LoadScene(escenaMenu);
     }
 
-    /// <summary>
-    /// Guarda el volumen en PlayerPrefs y, si hay AudioMixer, lo aplica convertido a decibelios.
-    /// </summary>
-    /// <param name="parametro">Nombre del parámetro expuesto en el AudioMixer.</param>
-    /// <param name="lineal">Volumen entre 0 y 1.</param>
     void AplicarVolumen(string parametro, float lineal)
     {
         PlayerPrefs.SetFloat(parametro, lineal);

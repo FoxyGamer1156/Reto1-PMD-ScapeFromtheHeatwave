@@ -22,9 +22,6 @@ public static class CrearUIJuego
     static DefaultControls.Resources res;
     static Sprite redondeado;
 
-    /// <summary>
-    /// Carga la fuente y los sprites integrados de Unity que usan los controles de UI.
-    /// </summary>
     static void Preparar()
     {
         fuente = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
@@ -40,12 +37,9 @@ public static class CrearUIJuego
         };
     }
 
-    /// <summary>
-    /// Crea en la escena abierta el HUD (barras de calor e hidratación, inventario,
-    /// botón de pausa) y el menú de pausa, y añade la escena a Build Settings.
-    /// </summary>
+    // ───────────────────────── HUD + PAUSA ─────────────────────────
     [MenuItem(M + "Crear HUD + Pausa")]
-    static void CrearHUD()
+    public static void CrearHUD()
     {
         var escena = SceneManager.GetActiveScene();
         if (Object.FindFirstObjectByType<HUDController>() != null)
@@ -58,18 +52,21 @@ public static class CrearUIJuego
         var hudGO = Estirado("HUD", canvas.transform);
         var hud = hudGO.gameObject.AddComponent<HUDController>();
 
+        // Barra de calor (amarillo → naranja → rojo)
         var gCalor = new Gradient();
         gCalor.SetKeys(
             new[] { new GradientColorKey(new Color(1f, .86f, .2f), 0f), new GradientColorKey(new Color(1f, .5f, .1f), .5f), new GradientColorKey(new Color(.9f, .1f, .1f), 1f) },
             new[] { new GradientAlphaKey(1, 0), new GradientAlphaKey(1, 1) });
         hud.barraCalor = CrearBarra(hudGO, "BarraCalor", "CALOR", new Vector2(30, -30), gCalor, 0f);
 
+        // Barra de hidratación (azul claro → azul intenso)
         var gAgua = new Gradient();
         gAgua.SetKeys(
             new[] { new GradientColorKey(new Color(.75f, .9f, 1f), 0f), new GradientColorKey(new Color(.1f, .55f, 1f), 1f) },
             new[] { new GradientAlphaKey(1, 0), new GradientAlphaKey(1, 1) });
         hud.barraHidratacion = CrearBarra(hudGO, "BarraHidratacion", "HIDRATACIÓN", new Vector2(30, -80), gAgua, 1f);
 
+        // Cuadrado de inventario vacío, arriba a la derecha (estilo Mario Kart)
         var marco = Hijo("Inventario", hudGO, V(1, 1), V(1, 1), V(1, 1), new Vector2(-30, -30), new Vector2(170, 170));
         var imgMarco = Imagen(marco, new Color(0, 0, 0, .45f));
         imgMarco.sprite = redondeado; imgMarco.type = Image.Type.Sliced;
@@ -81,6 +78,7 @@ public static class CrearUIJuego
         imgIcono.preserveAspect = true; imgIcono.raycastTarget = false; imgIcono.enabled = false;
         hud.iconoObjeto = imgIcono;
 
+        // Menú de pausa
         var pausa = canvas.gameObject.AddComponent<MenuPausa>();
         var panel = Estirado("PanelPausa", canvas.transform);
         Imagen(panel, new Color(0, 0, 0, .7f));
@@ -99,6 +97,7 @@ public static class CrearUIJuego
         Boton(ventana, "BotonContinuar", "Continuar", new Vector2(0, -400), new Vector2(380, 80), pausa.Continuar);
         Boton(ventana, "BotonSalirMenu", "Salir al menú", new Vector2(0, -500), new Vector2(380, 80), pausa.SalirAlMenu);
 
+        // Botón de pausa (Android), a la izquierda del inventario
         Boton(hudGO, "BotonPausa", "II", new Vector2(-230, -30), new Vector2(90, 90), pausa.Alternar, V(1, 1), V(1, 1), V(1, 1));
 
         Selection.activeGameObject = canvas.gameObject;
@@ -108,10 +107,7 @@ public static class CrearUIJuego
         else Debug.LogWarning("La escena no está guardada: guárdala y añádela a Build Settings.");
     }
 
-    /// <summary>
-    /// Crea la escena MenuPrincipal con fondo, título y botones Jugar/Salir,
-    /// la guarda y la pone la primera en Build Settings.
-    /// </summary>
+    // ───────────────────────── MENÚ PRINCIPAL ─────────────────────────
     [MenuItem(M + "Crear Menu Principal")]
     static void CrearMenuPrincipal()
     {
@@ -125,6 +121,7 @@ public static class CrearUIJuego
         var canvas = NuevoCanvas("UI_MenuPrincipal");
         var menu = canvas.gameObject.AddComponent<MenuPrincipal>();
 
+        // Fondo provisional (cámbialo por una imagen del nivel urbano, p. ej. Elementos_Escenario/Background)
         var fondo = Estirado("Fondo", canvas.transform);
         Imagen(fondo, new Color(.96f, .55f, .18f, 1f));
 
@@ -139,11 +136,7 @@ public static class CrearUIJuego
         Selection.activeGameObject = canvas.gameObject;
     }
 
-    /// <summary>
-    /// Añade una escena a Build Settings si no estaba.
-    /// </summary>
-    /// <param name="ruta">Ruta de la escena dentro del proyecto.</param>
-    /// <param name="alPrincipio">Si es true, la mueve a la primera posición aunque ya estuviera.</param>
+    // ───────────────────────── Build Settings ─────────────────────────
     static void AnadirABuild(string ruta, bool alPrincipio)
     {
         var lista = new List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
@@ -155,15 +148,9 @@ public static class CrearUIJuego
         EditorBuildSettings.scenes = lista.ToArray();
     }
 
-    /// <summary>
-    /// Atajo para crear un Vector2.
-    /// </summary>
+    // ───────────────────────── Helpers ─────────────────────────
     static Vector2 V(float x, float y) => new Vector2(x, y);
 
-    /// <summary>
-    /// Crea un Canvas que escala con la pantalla (referencia 1920x1080) y un
-    /// EventSystem si la escena no tiene ninguno.
-    /// </summary>
     static Canvas NuevoCanvas(string nombre)
     {
         var go = new GameObject(nombre, typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
@@ -185,9 +172,6 @@ public static class CrearUIJuego
         return c;
     }
 
-    /// <summary>
-    /// Crea un objeto de UI hijo de <paramref name="padre"/> con los anclajes, pivote, posición y tamaño indicados.
-    /// </summary>
     static RectTransform Hijo(string nombre, Transform padre, Vector2 aMin, Vector2 aMax, Vector2 pivot, Vector2 pos, Vector2 tam)
     {
         var go = new GameObject(nombre, typeof(RectTransform));
@@ -197,20 +181,11 @@ public static class CrearUIJuego
         return r;
     }
 
-    /// <summary>
-    /// Crea un objeto de UI hijo que ocupa todo el espacio de su padre.
-    /// </summary>
     static RectTransform Estirado(string nombre, Transform padre) =>
         Hijo(nombre, padre, V(0, 0), V(1, 1), V(.5f, .5f), Vector2.zero, Vector2.zero);
 
-    /// <summary>
-    /// Añade un componente Image del color indicado.
-    /// </summary>
     static Image Imagen(RectTransform r, Color c) { var i = r.gameObject.AddComponent<Image>(); i.color = c; return i; }
 
-    /// <summary>
-    /// Crea un texto de UI con la fuente, tamaño, alineación y color indicados.
-    /// </summary>
     static Text Texto(string nombre, Transform padre, string txt, int tam, TextAnchor al, Color col,
                       Vector2 aMin, Vector2 aMax, Vector2 pivot, Vector2 pos, Vector2 size)
     {
@@ -220,11 +195,6 @@ public static class CrearUIJuego
         return t;
     }
 
-    /// <summary>
-    /// Crea una barra con fondo, borde, relleno y etiqueta, y le añade un <see cref="BarraUI"/> configurado.
-    /// </summary>
-    /// <param name="g">Gradiente de color del relleno según el valor.</param>
-    /// <param name="inicial">Valor inicial de la barra (0..1).</param>
     static BarraUI CrearBarra(Transform padre, string nombre, string etiqueta, Vector2 pos, Gradient g, float inicial)
     {
         var fondo = Hijo(nombre, padre, V(0, 1), V(0, 1), V(0, 1), pos, new Vector2(440, 36));
@@ -246,9 +216,6 @@ public static class CrearUIJuego
         return b;
     }
 
-    /// <summary>
-    /// Crea un slider de volumen (0.0001..1) en la posición indicada.
-    /// </summary>
     static Slider CrearSlider(Transform padre, string nombre, Vector2 pos)
     {
         var go = DefaultControls.CreateSlider(res);
@@ -259,10 +226,6 @@ public static class CrearUIJuego
         return s;
     }
 
-    /// <summary>
-    /// Crea un botón con texto y le conecta <paramref name="accion"/> al pulsarlo
-    /// (queda guardado en la escena).
-    /// </summary>
     static Button Boton(Transform padre, string nombre, string texto, Vector2 pos, Vector2 tam, UnityAction accion,
                         Vector2? aMin = null, Vector2? aMax = null, Vector2? pivot = null, int fontSize = 34)
     {
